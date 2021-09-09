@@ -57,22 +57,35 @@ class CTool:
     def generate_load_all_cfg_start(self):
         code = "func (c *ConfigMgr) LoadAllCfg(dirPath string) error {" + base.change_line
         code += base.one_tab + "c.DirPath" + base.one_space + "=" + base.one_space + "dirPath" + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
-    def generate_load_all_cfg_context(self, file_name):                
+    def generate_load_all_cfg_context_new_obj(self, file_name):
         class_name_cfg = file_name + "Cfg"               
         code = base.one_tab + "c." + class_name_cfg + base.one_space + "=" + base.one_space +"&" + class_name_cfg + "{}" + base.change_line
-        code += base.one_tab + "if err := LoadConfig(dirPath,"+ base.one_space + "\"" + file_name + "\"," + base.one_space + "c." + class_name_cfg + "); err != nil {" + base.change_line
-        code += base.one_tab + base.one_tab + "return err" + base.change_line
-        code += base.one_tab + "}" + base.change_line
+        self.mCodeData += code
+    
+    def generate_load_all_cfg_context_map_start(self):
+        code = base.empty_line
+        code += base.one_tab + "cfgs := map[string]proto.Message{" + base.change_line
+        self.mCodeData += code
 
-        #code += base.one_tab + "ELog.Info(\"" + lower_file_name + " Config Start\")" + base.change_line
+    def generate_load_all_cfg_context_map_middle(self,file_name):
+        code = base.one_tab + base.one_tab + "\"" + file_name +"\":" + base.one_space + "c." + file_name + "Cfg," + base.change_line
+        self.mCodeData += code
+    
+    def generate_load_all_cfg_context_map_end(self):
+        code = base.one_tab + base.end_scope + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
 
-        #code += base.one_tab + "for _, info := range c." + lower_file_name + ".Datas {" + base.change_line
-        #code += base.one_tab + base.one_tab + "ELog.Infof(\"" + file_name + "=%+v \\n\", info)" + base.change_line
-        #code += base.one_tab + "}" + base.change_line
 
-        #code += base.one_tab + "ELog.Info(\"" + lower_file_name + " Config End\")" + base.change_line
+    def generate_load_all_cfg_context_end(self):
+        code =  base.one_tab + "for fileName, msg := range cfgs {" + base.change_line
+        code += base.one_tab + base.one_tab + "if err := LoadConfig(dirPath,"+ base.one_space + "fileName," + base.one_space +  "msg); err != nil {" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + "return err" + base.change_line
+        code += base.one_tab + base.one_tab + "}" + base.change_line
+        code += base.one_tab +  "}" + base.change_line
         code += base.empty_line
         self.mCodeData += code
 
@@ -208,7 +221,7 @@ class CTool:
         code = base.empty_line
         code += "var GConfigMgr *ConfigMgr" + base.change_line
         code += "var GExcelCfgReloadMgr *ExcelCfgReloadMgr" + base.change_line
-        code += "var ELog ILog" + base.change_line
+        #code += "var ELog ILog" + base.change_line
         code += base.empty_line
         code += "func init() {" + base.change_line
         code += base.one_tab + "GConfigMgr = &ConfigMgr{}" + base.change_line
@@ -238,9 +251,16 @@ def Start():
     tool.generate_end_struct()
     
     tool.generate_load_all_cfg_start()
+    
     for classname in classnames:        
-        tool.generate_load_all_cfg_context(classname)
+        tool.generate_load_all_cfg_context_new_obj(classname)
 
+    tool.generate_load_all_cfg_context_map_start()
+    for classname in classnames:  
+        tool.generate_load_all_cfg_context_map_middle(classname)
+    tool.generate_load_all_cfg_context_map_end()
+
+    tool.generate_load_all_cfg_context_end()
     tool.generate_load_all_cfg_end()
 
     for classname in classnames:                
@@ -262,12 +282,12 @@ def Start():
 
     tool.generate_excel_cfg_reload_mgr()
 
-    tool.generate_log()
+    #tool.generate_log()
     tool.generate_global_var()    
     all_path_file_name = CFG_MGR_PATH + "/" + "configmgr.go"
     with open(all_path_file_name, 'wb') as data_file:
         data_file.write(''.join(tool.get_code_data()))    
-    print "ok"
+    print "configmgr.go ok"
 
 
 if __name__ == '__main__':

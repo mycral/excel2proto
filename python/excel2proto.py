@@ -29,8 +29,7 @@ class CTool:
 
     def read(self,file_full_path,filename):                    
         xlsxfile = xlrd.open_workbook(file_full_path)
-        sheet_names = xlsxfile.sheet_names()
-        print sheet_names
+        sheet_names = xlsxfile.sheet_names()        
         is_need_write = False 
         header_flag = True 
         for index in range (0,len(sheet_names)):
@@ -72,11 +71,13 @@ class CTool:
             self.proto_generate(proto_name, english_names, server_types)
             self.proto_list_generate(proto_name)
             is_need_write = True 
+        print filename,sheet_names,"excel2proto ok..."
         return True,is_need_write
 
     def proto3_generate(self):
         code = "syntax = " + "\"proto3\"" + base.semicolon + base.change_line             
         code += "package" + base.one_space + "config;" + base.change_line
+        code += "option go_package =\"./;config\";"  + base.change_line
         self.mCodeData += code
 
     def proto_generate(self, classname, names, types):        
@@ -128,7 +129,7 @@ def Start():
         for filename in files:
             file_full_path = os.path.join(EXCEL_PATH, filename)
             if os.path.exists(file_full_path):                                                
-                file_name = filename.replace(".xlsx", "")
+                file_name = filename.replace(base.file_suffix_with_spot, "")
                 cap_file_name = file_name.capitalize()
                 try:
                     tool = CTool()

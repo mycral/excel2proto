@@ -6,23 +6,17 @@ import time
 import sys
 import xlrd
 import string
+import base
+import shutil 
+import re
 
-PB_INPUTPATH = sys.argv[1]
-CFG_MGR_OUTPATH = sys.argv[2]
+EXCEL_PATH = sys.argv[1]
+CLASSNAME_CACHE_PATH = sys.argv[2]
+CFG_MGR_PATH = sys.argv[3]
 
-#PB_INPUTPATH = u"..\\config\\out\\binary"
-#CFG_MGR_OUTPATH = u"..\\config\\out\\cplusplus_cfg_mgr"
-
-CODE = "utf8"
-
-CLIENT_FLAG = 1
-SERVER_FLAG = 2
-COMMON_FLAG = 3
-
-change_line = "\n"
-empty_line = "                     \n"
-tab_code = "   "
-
+#EXCEL_PATH = u"./excel"
+#CLASSNAME_CACHE_PATH = u"./cache/classname"
+#CFG_MGR_PATH = u"./cache/cplusplus_cfg_mgr"
 
 class CTool:
     def __init__(self):
@@ -32,292 +26,316 @@ class CTool:
         return self.mCodeData
 
     def generate_include(self):
-        code = "#pragma once" + change_line
-        code += "#include \"engine/inc/common/errorstring.h\"" + change_line
-        code += "#include <cinttypes>" + change_line
-        code += "#include <memory>" + change_line
-        code += empty_line
-        code += "using namespace std;" + change_line
-        code += "using namespace Framework;" + change_line
-        code += empty_line
-        code += "namespace google" + change_line
-        code += "{" + change_line
-        code += tab_code + "namespace protobuf" + change_line
-        code += tab_code + "{" + change_line
-        code += tab_code + tab_code + "class Message;" + change_line
-        code += tab_code + "}" + change_line
-        code += "}" + change_line
-        code += empty_line
+        code = "#pragma once" + base.change_line        
+        code += "#include <cinttypes>" + base.change_line
+        code += "#include <memory>" + base.change_line
+        code +=  "#include <string>" +  base.change_line 
+        code += base.empty_line
+        code += "using namespace std;" + base.change_line        
+        code += base.empty_line
+        code += "namespace google" + base.change_line
+        code += "{" + base.change_line
+        code += base.one_tab + "namespace protobuf" + base.change_line
+        code += base.one_tab + "{" + base.change_line
+        code += base.one_tab + base.one_tab + "class Message;" + base.change_line
+        code += base.one_tab + "}" + base.change_line
+        code += "}" + base.change_line
+        code += base.empty_line
 
         self.mCodeData += code
 
-    def generate_class_declare_start(self):
-        code = "namespace config" + change_line
-        code += "{" + change_line
+    def generate_namespace_declare_start(self):
+        code = "namespace config" + base.change_line
+        code += "{" + base.change_line
         self.mCodeData += code
 
     def generate_class_declare(self, fileName):
-        code = tab_code + "class" + tab_code + fileName + "cfg;" + change_line
-        code += tab_code + "class" + tab_code + fileName + ";" + change_line
+        code = base.one_tab + "class" + base.one_space + fileName + "Cfg;" + base.change_line
+        code += base.one_tab + "class" + base.one_space + fileName + ";" + base.change_line
         self.mCodeData += code
 
-    def generate_class_declare_end(self):
-        code = "}" + change_line
-        code += empty_line
+    def generate_namespace_declare_end(self):
+        code = "}" + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
+
+    def generate_error_string(self):
+        code = base.empty_line 
+        code += base.one_tab + "class ErrorString" + base.change_line 
+        code += base.one_tab + base.start_scope + base.change_line 
+        code += base.one_tab + base.one_tab + "public:" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + "ErrorString(const char* val) : content(val)" + base.change_line 
+        code += base.one_tab + base.one_tab + base.one_tab + base.start_scope + base.change_line 
+        code += base.one_tab + base.one_tab + base.one_tab + base.end_scope + base.change_line 
+        code += base.one_tab + base.empty_line 
+        code += base.one_tab + base.one_tab + base.one_tab + "const char* Str()" + base.change_line 
+        code += base.one_tab + base.one_tab + base.one_tab + base.start_scope + base.change_line  
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "return content;" + base.change_line 
+        code += base.one_tab + base.one_tab + base.one_tab + base.end_scope + base.change_line 
+        code += base.empty_line 
+        code += base.one_tab + base.one_tab + "private:" + base.change_line 
+        code += base.one_tab + base.one_tab + base.one_tab + "const char* content;" + base.change_line 
+        code += base.one_tab + base.end_scope + ";" + base.change_line 
+        code += base.empty_line 
+        code += base.one_tab + "using ErrorStringPtr = shared_ptr<ErrorString>;" + base.change_line 
+        code += base.one_tab + "#define CREATE_ERROR_STRING(text) make_shared<ErrorString>(text)" + base.change_line
+        code += base.empty_line         
         self.mCodeData += code
 
     def generate_start_class(self):
-        code = "class StaticDataMgr " + change_line
-        code += "{" + change_line
-        code += "public:" + change_line
-        code += tab_code + "~StaticDataMgr();" + change_line
-        code += empty_line
-        code += tab_code + "const char* GetPath();" + change_line
-        code += empty_line
-        code += tab_code + \
-            "ErrorStringPtr LoadAllCfg(const char *path);" + change_line
-        code += empty_line
-        code += "private:" + change_line
-        code += tab_code + \
-            "bool load_cfg(const char *path, google::protobuf::Message *msg);" + change_line
-        code += empty_line
-        code += "public:" + change_line
+        code = base.one_tab + "class ConfigMgr " + base.change_line
+        code += base.one_tab + "{" + base.change_line
+        code += base.one_tab + "public:" + base.change_line
+        code += base.one_tab + base.one_tab + "~ConfigMgr();" + base.change_line
+        code += base.empty_line
+        code += base.one_tab + base.one_tab + "const char* GetPath();" + base.change_line
+        code += base.empty_line
+        code += base.one_tab + base.one_tab + "ErrorStringPtr LoadAllCfg(const char *path);" + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
-    def generate_context_class(self, fileName):
-        cap_file_name = fileName.capitalize()
-        code = tab_code + "const config::" + fileName + \
-            "cfg*  " + "Get" + cap_file_name + "Cfg();" + change_line
-        code += empty_line
-        code += tab_code + "const config::" + fileName + \
-            "*  " + "Get" + cap_file_name + \
-            "ByID(uint32_t id);" + change_line
-        code += empty_line
+    def generate_define_load_static(self):
+        code = base.one_tab + base.one_tab + "static bool LoadExcelConfig(const char *path, google::protobuf::Message *msg);" + base.change_line
+        code += base.empty_line        
+        self.mCodeData += code
+    
+    def generate_define_reload_static(self):
+        code = base.one_tab + base.one_tab + "static google::protobuf::Message* ReloadExcelConfig(const char *path,string file_name);" + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
+
+    def generate_context_class(self, fileName):        
+        code = base.one_tab + base.one_tab + "const " + fileName + "Cfg*  " + "Get" + fileName + "Cfg();" + base.change_line
+        code += base.empty_line
+        code += base.one_tab + base.one_tab + "const " + fileName + "*  " + "Get" + fileName + "ByID(uint32_t id);" + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
     def generate_define_start(self):
-        code = "private:" + change_line
-        code += tab_code + "const char*  load_path = nullptr;" + change_line
-        code += empty_line
+        code = base.one_tab + "private:" + base.change_line
+        code += base.one_tab + base.one_tab + "const char*  path = nullptr;" + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
     def generate_define_class(self, fileName):
-        code = tab_code + "config::" + fileName + "cfg *" + \
-            fileName + "_ptr = nullptr;" + change_line
-
+        lower_file_name = fileName.lower()
+        code = base.one_tab + base.one_tab + "" + fileName + "Cfg *" + lower_file_name + "_ptr = nullptr;" + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
     def generate_end_class(self):
-        code = "};" + change_line
-        code += empty_line
-        code += "extern shared_ptr<StaticDataMgr> GStaticDataMgr;"
-        code += empty_line
+        code = base.one_tab + "};" + base.change_line
+        code += base.empty_line
+        code += base.one_tab + "extern shared_ptr<ConfigMgr> GConfigMgr;"
+        code += base.empty_line
         self.mCodeData += code
 
-    def del_file(self, path):
-        ls = os.listdir(path)
-        for i in ls:
-            c_path = os.path.join(path, i)
-            if os.path.isdir(c_path):
-                self.del_file(c_path)
-            else:
-                os.remove(c_path)
-
-    def write(self, path, filename, content):
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        all_path_filename = path + "\\" + filename
-        code_file = open(all_path_filename, 'w')
-        code_file.write(''.join(content))
-        code_file.close()
-
     def generate_cpp_include(self):
-        code = "#include \"staticdatamgr.h\"" + change_line
-        code += "#include \"engine/inc/common/utils.hpp\"" + change_line
-        code += "#include \"engine/inc/log/env.h\"" + change_line
-        code += "#include \"google/protobuf/message.h\"" + change_line
-        code += "#include \"tip.pb.h\"" + change_line
-        code += "#include <fstream>" + change_line
-        code += "#include <iostream>" + change_line
-        code += "#include <sstream>" + change_line
-        code += empty_line
-        code += "using namespace Framework;" + change_line
-        code += empty_line
-        code += "shared_ptr<StaticDataMgr> GStaticDataMgr = make_shared<StaticDataMgr>();" + \
-            change_line
-        code += empty_line
+        code = "#include \"configmgr.h\"" + base.change_line
+        code += "#include \"google/protobuf/message.h\"" + base.change_line        
+        code += "#include <fstream>" + base.change_line
+        code += "#include <iostream>" + base.change_line
+        code += "#include <sstream>" + base.change_line        
+        self.mCodeData += code
+    
+    def generate_cpp_include_filename(self,fileName):
+        code = "#include \"" + fileName + "\"" + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
+    
+    def generate_cpp_define_var(self):        
+        code = base.empty_line
+        code += base.one_tab + "shared_ptr<ConfigMgr> GConfigMgr = make_shared<ConfigMgr>();" + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
     def generate_cpp_destruct_start(self):
-        code = "StaticDataMgr::~StaticDataMgr()" + change_line
-        code += "{" + change_line
+        code = base.one_tab +  "ConfigMgr::~ConfigMgr()" + base.change_line
+        code += base.one_tab +  "{" + base.change_line
         self.mCodeData += code
 
     def generate_cpp_destruct(self, fileName):
-        code = tab_code + "SAFE_DELETE(" + fileName + "_ptr);" + change_line
+        lower_file_name = fileName.lower()
+        code = base.one_tab +  base.one_tab + "if(" + lower_file_name + "_ptr)" + base.change_line
+        code += base.one_tab +  base.one_tab  + base.start_scope + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "delete"+ base.one_space + lower_file_name + "_ptr;" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + lower_file_name + "_ptr" + base.one_space + "=" + base.one_tab + "nullptr;" + base.change_line
+        code += base.one_tab +  base.one_tab + base.end_scope + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
     def generate_cpp_destruct_end(self):
-        code = "}" + change_line
-        code += empty_line
+        code = base.one_tab +  "}" + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
     def generate_cpp_load_template(self):
-        code = "bool StaticDataMgr::load_cfg(const char *path, google::protobuf::Message *msg)" + change_line
-        code += "{" + change_line
-        code += tab_code + "load_path = path;" + change_line
-        code += tab_code + "ifstream fs(path);" + change_line
-        code += tab_code + "if (!fs.is_open())" + change_line
-        code += tab_code + "{" + change_line
-        code += tab_code + tab_code + "return false;" + change_line
-        code += tab_code + "}" + change_line
-        code += tab_code + "stringstream buffer;" + change_line
-        code += tab_code + "buffer << fs.rdbuf();" + change_line
-        code += tab_code + \
-            "return msg->ParseFromArray(buffer.str().c_str(), buffer.str().length());" + change_line
-        code += "}" + change_line
-        code += empty_line
-        code += "const char* StaticDataMgr::GetPath() {" + change_line
-        code += tab_code + "return load_path;" + change_line
-        code += "}" + change_line
-        code += empty_line
-
+        code = base.one_tab +  "bool ConfigMgr::LoadExcelConfig(const char *path, google::protobuf::Message *msg)" + base.change_line
+        code += base.one_tab +  "{" + base.change_line        
+        code += base.one_tab +  base.one_tab + "ifstream ifs(path,ifstream::binary);" + base.change_line
+        code += base.one_tab +  base.one_tab + "if (!ifs.is_open())" + base.change_line
+        code += base.one_tab +  base.one_tab + "{" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "return false;" + base.change_line
+        code += base.one_tab +  base.one_tab + "}" + base.change_line
+        code += base.one_tab +  base.one_tab + "std::filebuf* pbuf = ifs.rdbuf();" + base.change_line 
+        code += base.one_tab +  base.one_tab + "std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);" + base.change_line
+        code += base.one_tab +  base.one_tab + "pbuf->pubseekpos(0, ifs.in);" + base.change_line
+        code += base.one_tab +  base.one_tab + "char* buffer = new char[size];" + base.change_line 
+        code += base.one_tab +  base.one_tab + "pbuf->sgetn(buffer, size);" + base.change_line 
+        code += base.one_tab +  base.one_tab + "ifs.close();" + base.change_line
+        code += base.one_tab +  base.one_tab + "bool flag = msg->ParseFromArray((const void*)buffer, size);" + base.change_line
+        code += base.one_tab +  base.one_tab + "delete[] buffer;" + base.change_line
+        code += base.one_tab +  base.one_tab + "return flag;" + base.change_line
+        code += base.one_tab +  "}" + base.change_line
+        code += base.empty_line        
         self.mCodeData += code
 
+    def generate_cpp_load_reload_template(self):
+        code = base.one_tab + "google::protobuf::Message* ConfigMgr::ReloadExcelConfig(const char *path,string file_name)" + base.change_line
+        code += base.one_tab + base.start_scope + base.change_line 
+        code += base.one_tab + base.one_tab + "string prefix_path(path);" + base.change_line 
+        code += base.one_tab + base.one_tab + "string path = prefix_path + \"/\" + file_name + \".pb\";" + base.change_line 
+        code += base.one_tab + base.one_tab + "obj := ClassFactory::Instance()->GetClassByName(file_name)" + base.change_line
+        code += base.one_tab + base.one_tab + "if (ConfigMgr::LoadExcelConfig(path.c_str(),(google::protobuf::Message*)obj))" + base.change_line
+        code += base.one_tab + base.one_tab + base.start_scope + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + "return (google::protobuf::Message*)obj" + base.change_line
+        code += base.one_tab + base.one_tab + base.end_scope + base.change_line 
+        code += base.empty_line                 
+        code += base.one_tab + base.one_tab + "return nullptr;" + base.change_line 
+        code += base.one_tab + base.end_scope + base.change_line
+        code += base.empty_line     
+        self.mCodeData += code    
+
     def generate_load_all_cfg_start(self):
-        code = "ErrorStringPtr StaticDataMgr::LoadAllCfg(const char *path)" + \
-            change_line
-        code += "{" + change_line
+        code = base.one_tab +  "const char* ConfigMgr::GetPath() {" + base.change_line
+        code += base.one_tab +  base.one_tab + "return path;" + base.change_line
+        code += base.one_tab +  "}" + base.change_line
+        code += base.empty_line
+        code += base.one_tab +  "ErrorStringPtr ConfigMgr::LoadAllCfg(const char *path)" + base.change_line
+        code += base.one_tab +  "{" + base.change_line
+        code += base.one_tab +  base.one_tab + "this->path = path;" + base.change_line
+        code += base.one_tab +  base.one_tab + "string prefix_path(path);" + base.change_line
         self.mCodeData += code
 
     def generate_load_all_cfg(self, fileName):
-        cap_file_name = fileName.capitalize()
-        code = tab_code + fileName + "_ptr = NEW config::" + fileName + "cfg();" + \
-            change_line
-        code += tab_code + "string prefix_path(path);" + change_line
-
-        code += tab_code + "string " + fileName + "_path = prefix_path + \"/" + \
-            fileName + ".pb\";" + change_line
-
-        code += tab_code + \
-            "if (!load_cfg(" + fileName + "_path.c_str(), " + \
-            fileName + "_ptr))" + change_line
-        code += tab_code + "{" + change_line
-        code += tab_code + tab_code + "return CREATE_ERROR_STRING(\"load " + \
-            fileName + "  file error..\"); " + change_line
-        code += tab_code + "}" + change_line
-        code += tab_code + "LogInfo(\"[StaticDataMgr] " + cap_file_name + \
-            "Cfg={}\"," + fileName + "_ptr->DebugString());" + change_line
-        code += empty_line
+        lower_file_name = fileName.lower()
+        code = base.one_tab +  base.one_tab + lower_file_name + "_ptr = new " + fileName + "Cfg();" + base.change_line        
+        code += base.one_tab +  base.one_tab + "string " + lower_file_name + "_path = prefix_path + \"/" + fileName + ".pb\";" + base.change_line
+        code += base.one_tab +  base.one_tab + "if (!ConfigMgr::LoadExcelConfig(" + lower_file_name + "_path.c_str(), " + lower_file_name + "_ptr))" + base.change_line
+        code += base.one_tab +  base.one_tab + "{" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "return CREATE_ERROR_STRING(\"load " + fileName + "  file error..\"); " + base.change_line
+        code += base.one_tab +  base.one_tab + "}" + base.change_line        
+        code += base.empty_line
 
         self.mCodeData += code
 
     def generate_load_all_cfg_end(self):
-        code = tab_code + "return nullptr;" + change_line
-        code += "}" + change_line
-        code += empty_line
+        code = base.one_tab + base.one_tab + "return nullptr;" + base.change_line
+        code += base.one_tab +  "}" + base.change_line
+        code += base.empty_line
         self.mCodeData += code
 
-    def generate_get_cfg(self, fileName):
-        cap_file_name = fileName.capitalize()
-        code = "const config::" + fileName + "cfg* StaticDataMgr::Get" + \
-            cap_file_name + "Cfg()" + change_line
-        code += "{" + change_line
-        code += tab_code + "return " + fileName + "_ptr;" + change_line
-        code += "}" + change_line
-        code += empty_line
+    def generate_get_cfg(self, fileName): 
+        lower_file_name = fileName.lower()       
+        code = base.one_tab +  "const " + fileName + "Cfg* ConfigMgr::Get" + fileName + "Cfg()" + base.change_line
+        code += base.one_tab +  "{" + base.change_line
+        code += base.one_tab +  base.one_tab + "return " + lower_file_name + "_ptr;" + base.change_line
+        code += base.one_tab +  "}" + base.change_line
+        code += base.empty_line
 
-        code += "const config::" + fileName + "*  StaticDataMgr::Get" + \
-            cap_file_name + "ByID(uint32_t id) {" + change_line
-        code += tab_code + "if (" + fileName + "_ptr) {" + change_line
-        code += tab_code + tab_code + "auto iter = " + \
-            fileName + "_ptr->datas().find(id);" + change_line
-        code += tab_code + tab_code + "if (iter != " + fileName + \
-            "_ptr->datas().end()) {" + change_line
-        code += tab_code + tab_code + tab_code + \
-            "return &(iter->second);" + change_line
-        code += tab_code + tab_code + "}" + change_line
-        code += tab_code + "}" + change_line
-        code += tab_code + "return nullptr;" + change_line
-        code += "}" + change_line
+        code += base.one_tab +  "const " + fileName + "*  ConfigMgr::Get" + fileName + "ByID(uint32_t id) {" + base.change_line
+        code += base.one_tab +  base.one_tab + "if (" + lower_file_name + "_ptr) {" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "auto iter = " + lower_file_name + "_ptr->datas().find(id);" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "if (iter != " + lower_file_name + "_ptr->datas().end()) {" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + base.one_tab + "return &(iter->second);" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "}" + base.change_line
+        code += base.one_tab +  base.one_tab + "}" + base.change_line
+        code += base.one_tab +  base.one_tab + "return nullptr;" + base.change_line
+        code += base.one_tab +  "}" + base.change_line
 
-        code += empty_line
+        code += base.empty_line
         self.mCodeData += code
-
-
+    
+    def generate_new_obj(self,fileName):
+        code = base.one_tab + "REGISTER_REFLECTOR(" + fileName + "Cfg);"  + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
+        
 def Start():
-    # staticdatamgr.h generate
+    if os.path.exists(CFG_MGR_PATH): shutil.rmtree(CFG_MGR_PATH)    
+    if not os.path.exists(CFG_MGR_PATH): os.makedirs(CFG_MGR_PATH)
+
+    classname_file_name = CLASSNAME_CACHE_PATH + "/classname.txt"
+    with open(classname_file_name, "r") as classname_file:
+        classname_content = classname_file.read()
+        classnames = re.split(base.one_space,classname_content)
+
+    classnames.remove("")
+
+    # configmgr.h generate
     tool = CTool()
     tool.generate_include()
 
-    tool.generate_class_declare_start()
-    for _, _, files in os.walk(PB_INPUTPATH):
-        for filename in files:
-            file_full_path = os.path.join(PB_INPUTPATH, filename)
-            if os.path.exists(file_full_path):
-                pb_name = filename.replace(".pb", "")
-                tool.generate_class_declare(pb_name)
-
-    tool.generate_class_declare_end()
+    tool.generate_namespace_declare_start()
+    for classname in classnames:
+        tool.generate_class_declare(classname)    
+    tool.generate_error_string()
 
     tool.generate_start_class()
-    for _, _, files in os.walk(PB_INPUTPATH):
-        for filename in files:
-            file_full_path = os.path.join(PB_INPUTPATH, filename)
-            if os.path.exists(file_full_path):
-                pb_name = filename.replace(".pb", "")
-                tool.generate_context_class(pb_name)
+    for classname in classnames:
+        tool.generate_context_class(classname)
+
+    tool.generate_define_load_static()
+    #tool.generate_define_reload_static()
 
     tool.generate_define_start()
-
-    for _, _, files in os.walk(PB_INPUTPATH):
-        for filename in files:
-            file_full_path = os.path.join(PB_INPUTPATH, filename)
-            if os.path.exists(file_full_path):
-                pb_name = filename.replace(".pb", "")
-                tool.generate_define_class(pb_name)
-
+    for classname in classnames:
+        tool.generate_define_class(classname)
     tool.generate_end_class()
+    tool.generate_namespace_declare_end()
 
-    h_filename = "staticdatamgr.h"
-    # tool.del_file(CFG_MGR_OUTPATH)
-    tool.write(CFG_MGR_OUTPATH, h_filename, tool.get_code_data())
-    print "ok"
+    all_path_file_name = CFG_MGR_PATH + "/" + "configmgr.h"
+    with open(all_path_file_name, 'wb') as data_file:
+        data_file.write(''.join(tool.get_code_data()))    
+    print "configmgr.h ok"
 
-    # staticdatamgr.cpp generate
+    # configmgr.cpp generate
     cpp_tool = CTool()
     cpp_tool.generate_cpp_include()
-    cpp_tool.generate_cpp_destruct_start()
-    for _, _, files in os.walk(PB_INPUTPATH):
+    for _, _, files in os.walk(EXCEL_PATH):
         for filename in files:
-            file_full_path = os.path.join(PB_INPUTPATH, filename)
+            file_full_path = os.path.join(EXCEL_PATH, filename)
             if os.path.exists(file_full_path):
-                pb_name = filename.replace(".pb", "")
-                cpp_tool.generate_cpp_destruct(pb_name)
+                pb_name = filename.replace(base.file_suffix_with_spot, ".pb.h")          
+                cpp_tool.generate_cpp_include_filename(pb_name)
+
+    cpp_tool.generate_namespace_declare_start()    
+    cpp_tool.generate_cpp_define_var()
+    cpp_tool.generate_cpp_destruct_start()
+    for classname in classnames:
+        cpp_tool.generate_cpp_destruct(classname)
     cpp_tool.generate_cpp_destruct_end()
 
     cpp_tool.generate_cpp_load_template()
+    #cpp_tool.generate_cpp_load_reload_template()
 
     cpp_tool.generate_load_all_cfg_start()
-    for _, _, files in os.walk(PB_INPUTPATH):
-        for filename in files:
-            file_full_path = os.path.join(PB_INPUTPATH, filename)
-            if os.path.exists(file_full_path):
-                pb_name = filename.replace(".pb", "")
-                cpp_tool.generate_load_all_cfg(pb_name)
+    for classname in classnames:
+        cpp_tool.generate_load_all_cfg(classname)
     cpp_tool.generate_load_all_cfg_end()
 
-    for _, _, files in os.walk(PB_INPUTPATH):
-        for filename in files:
-            file_full_path = os.path.join(PB_INPUTPATH, filename)
-            if os.path.exists(file_full_path):
-                pb_name = filename.replace(".pb", "")
-                cpp_tool.generate_get_cfg(pb_name)
+    for classname in classnames:    
+        cpp_tool.generate_get_cfg(classname)   
 
-    cpp_filename = "staticdatamgr.cpp"
-    cpp_tool.write(CFG_MGR_OUTPATH, cpp_filename, cpp_tool.get_code_data())
-    print "ok"
+    #for classname in classnames:
+    #    cpp_tool.generate_new_obj(classname)
+
+    cpp_tool.generate_namespace_declare_end() 
+    
+    all_path_file_name = CFG_MGR_PATH + "/" + "configmgr.cpp"
+    with open(all_path_file_name, 'wb') as data_file:
+        data_file.write(''.join(cpp_tool.get_code_data()))    
+    print "configmgr.cpp ok"
 
 
 if __name__ == '__main__':

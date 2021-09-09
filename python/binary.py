@@ -22,8 +22,7 @@ class CTool:
     def parse(self,file_full_path,filename):
         cap_file_name = filename.capitalize()
         xlsxfile = xlrd.open_workbook(file_full_path)
-        sheet_names = xlsxfile.sheet_names()
-        #print sheet_names           
+        sheet_names = xlsxfile.sheet_names()          
         mod = base.import_mod(PYTHON_CACHE_PATH,filename + "_pb2")     
         for index in range (0,len(sheet_names)):
             table = xlsxfile.sheet_by_index(index)            
@@ -90,7 +89,7 @@ class CTool:
             #print PbName
             with open(PbName, 'wb') as dataFile:
                 dataFile.write(cfg_obj.SerializeToString())
-
+        print filename,sheet_names,"binary ok..."
 def Start():        
     if os.path.exists(BINARY_CACHE_PATH): shutil.rmtree(BINARY_CACHE_PATH)    
     if not os.path.exists(BINARY_CACHE_PATH): os.makedirs(BINARY_CACHE_PATH)
@@ -100,12 +99,12 @@ def Start():
             array = filename.split(".")
             if len(array) < 2:
                 continue
-            if array[1] != "xlsx":
+            if array[1] != base.file_suffix:
                 continue
 
             file_full_path = os.path.join(EXCEL_PATH, filename)
             if os.path.exists(file_full_path):                                                
-                file_name = filename.replace(".xlsx", "")                
+                file_name = filename.replace(base.file_suffix_with_spot, "")                
                 try:
                     tool = CTool()
                     tool.parse(file_full_path,file_name)

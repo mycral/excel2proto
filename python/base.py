@@ -1,6 +1,9 @@
 import sys
 import string
 
+file_suffix = "xlsx"
+file_suffix_with_spot = ".xlsx"
+
 #Common Characters
 change_line = "\n"
 empty_line = "\n"
