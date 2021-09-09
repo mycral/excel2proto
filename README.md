@@ -1,10 +1,10 @@
 # python运行环境:
-*python: 2.7
-*protobuf: 3.17.3
-*https://bootstrap.pypa.io/get-pip.py
-*pip install xlrd==1.2.0
-*pip install protobuf==3.13.0
-*pip list
+* python: 2.7
+* protobuf: 3.17.3
+* pip 
+* pip install xlrd==1.2.0
+* pip install protobuf==3.13.0
+* pip list
 
 # 功能
 ## 支持跨平台: excel2proto.bat(window),excel2proto.sh(linux)
