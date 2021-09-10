@@ -1,5 +1,6 @@
 import sys
 import string
+import re
 
 file_suffix = "xlsx"
 file_suffix_with_spot = ".xlsx"
@@ -25,8 +26,11 @@ map_data_value_type= ("int32","uint32","int64","uint64","string")
 english_row = 1
 cs_row = 2
 server_type_row = 4
-limit_row = 5
-data_start_row = 8
+key_row = 5
+limit_row = 6
+data_start_row = 9
+MainKey="Key"
+MixKey="MixKey"
 
 def check_data_type(field_name):
     return  is_base(field_name) or is_array(field_name) or is_map(field_name)
@@ -121,6 +125,21 @@ def parse_value(type_name,val):
     else:
         if val == "": val = "0"
         return int(float(val))
+
+def parse_classnames(content):    
+    classnames=[] 
+    classname_units = re.split(";",content)
+    for classname_unit in classname_units:
+        classname_array = re.split(":",classname_unit)
+        classname = classname_array[0]
+        classnames.append(classname)
+    return classnames
+    #classname_array = re.split(":",classname_unit)
+    #classname = classname_array[0]
+    #key_arrays = re.split("_",classname_array[1])
+    #key_str = key_arrays[0]
+    #key_type = key_arrays[1]
+    #key_name = key_arrays[2]    
 
 def main():
     pass

@@ -10,11 +10,11 @@ import base
 import shutil 
 import re
 
-CLASSNAME_CACHE_PATH = sys.argv[1]
-CFG_MGR_PATH = sys.argv[2]
+#CLASSNAME_CACHE_PATH = sys.argv[1]
+#CFG_MGR_PATH = sys.argv[2]
 
-#CLASSNAME_CACHE_PATH = u"./cache/classname"
-#CFG_MGR_PATH = u"./cache/go_cfg_mgr"
+CLASSNAME_CACHE_PATH = u"./cache/classname"
+CFG_MGR_PATH = u"./cache/go_cfg_mgr"
 
 class CTool:
     def __init__(self):
@@ -102,6 +102,54 @@ class CTool:
         code += base.one_tab + base.one_tab + "if info, ok := c." + class_name_cfg + ".Datas[id]; ok {" + base.change_line
         code += base.one_tab + base.one_tab + base.one_tab + "return info" + base.change_line
         code += base.one_tab + base.one_tab + "}" + base.change_line
+        code += base.one_tab + "}" + base.change_line
+        code += base.one_tab + "return nil" + base.change_line
+        code += "}" + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
+
+    def generate_get_by_key_name(self, class_name,key_type,key_name):    
+        lower_key_name = key_name.lower()    
+        class_name_cfg = class_name + "Cfg"        
+        code = "func (c *ConfigMgr) Get" + class_name + "By" + key_name + "(" + lower_key_name + base.one_space + key_type + ") *"    + class_name + " {" + base.change_line
+        code += base.one_tab + "if c." + class_name_cfg + ".Datas != nil {" + base.change_line
+        code += base.one_tab + base.one_tab + "for _, info := range c." + class_name_cfg + ".Datas {" + base.empty_line
+        code += base.one_tab + base.one_tab + base.one_tab + "if info." + key_name + base.one_space + "==" + base.one_space + lower_key_name + base.one_space + "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "return info" + base.change_line 
+        code +=  base.one_tab + base.one_tab + base.one_tab + "}" + base.change_line
+        code +=  base.one_tab + base.one_tab  + "}" + base.change_line
+        code += base.one_tab + "}" + base.change_line
+        code += base.one_tab + "return nil" + base.change_line
+        code += "}" + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
+
+    def generate_get_by_mix_key_names(self,class_name,mixkey_types,mixkey_names):          
+        class_name_cfg = class_name + "Cfg"        
+        code = "func (c *ConfigMgr) Get" + class_name + "ByMixKey("
+        i = 0
+        for mix_key in mixkey_types:    
+            if i == 0:        
+                code += mixkey_names[i].lower() +  base.one_space + mixkey_types[i]
+            else:
+                code += "," + mixkey_names[i].lower() +  base.one_space + mixkey_types[i]
+            i = i + 1
+        code += ") *"    + class_name + " {" + base.change_line
+        code += base.one_tab + "if c." + class_name_cfg + ".Datas != nil {" + base.change_line
+        code += base.one_tab + base.one_tab + "for _, info := range c." + class_name_cfg + ".Datas {" + base.empty_line
+                
+        code += base.one_tab + base.one_tab + base.one_tab + "if info." 
+        i = 0
+        for mix_key in mixkey_types:    
+            if i == 0:        
+                code += mixkey_names[i] + base.one_space + "==" + base.one_space + mixkey_names[i].lower()
+            else:
+                code += " && " + "info." + mixkey_names[i] + base.one_space + "==" + base.one_space + mixkey_names[i].lower()
+            i = i + 1
+        code += " {" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "return info" + base.change_line 
+        code +=  base.one_tab + base.one_tab + base.one_tab + "}" + base.change_line
+        code +=  base.one_tab + base.one_tab  + "}" + base.change_line
         code += base.one_tab + "}" + base.change_line
         code += base.one_tab + "return nil" + base.change_line
         code += "}" + base.change_line
@@ -233,11 +281,12 @@ def Start():
     if os.path.exists(CFG_MGR_PATH): shutil.rmtree(CFG_MGR_PATH)    
     if not os.path.exists(CFG_MGR_PATH): os.makedirs(CFG_MGR_PATH)
 
+    classname_content=""
     classname_file_name = CLASSNAME_CACHE_PATH + "/classname.txt"
     with open(classname_file_name, "r") as classname_file:
         classname_content = classname_file.read()
-        classnames = re.split(base.one_space,classname_content)
-
+    classname_content = base.get_handle_string(classname_content)
+    classnames = base.parse_classnames(classname_content)
     classnames.remove("")
 
     tool = CTool()
@@ -263,8 +312,34 @@ def Start():
     tool.generate_load_all_cfg_context_end()
     tool.generate_load_all_cfg_end()
 
+    #id
     for classname in classnames:                
-        tool.generate_get_by_id(classname)
+       tool.generate_get_by_id(classname)
+
+    #get key minkey 
+    classname_units = re.split(";",classname_content)
+    classname_units.remove("")
+    for classname_unit in classname_units:
+        classname_array = re.split(":",classname_unit)
+        classname = classname_array[0]
+        keys=[]
+        mixkey_types=[]
+        mixkey_names=[]
+        key_arrays = re.split("#",classname_array[1])
+        for key_array in key_arrays:
+            key_infos = re.split("_",key_array)
+            key_str = key_infos[0]
+            key_type = key_infos[1]
+            key_name = key_infos[2]
+            if key_name != "ID" and key_str == base.MainKey:
+                #key
+                tool.generate_get_by_key_name(classname,key_type,key_name)
+            elif key_str == base.MixKey:
+                #minkey
+                mixkey_types.append(key_type)
+                mixkey_names.append(key_name)
+        if len(mixkey_types) != 0 and len(mixkey_names) != 0:
+            tool.generate_get_by_mix_key_names(classname,mixkey_types,mixkey_names)
 
     for classname in classnames:
         tool.generate_set_cfg(classname)

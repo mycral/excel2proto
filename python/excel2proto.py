@@ -9,15 +9,15 @@ import string
 import shutil 
 import base
 
-EXCEL_PATH = sys.argv[1]
-PROTO_CACHE_PATH = sys.argv[2]
-PYTHON_CACHE_PATH = sys.argv[3]
-CLASSNAME_CACHE_PATH = sys.argv[4]
+#EXCEL_PATH = sys.argv[1]
+#PROTO_CACHE_PATH = sys.argv[2]
+#PYTHON_CACHE_PATH = sys.argv[3]
+#CLASSNAME_CACHE_PATH = sys.argv[4]
 
-#EXCEL_PATH = u"./excel"
-#PROTO_CACHE_PATH = u"./cache/proto"
-#PYTHON_CACHE_PATH = u"./cache/python"
-#CLASSNAME_CACHE_PATH = u"./cache/classname"
+EXCEL_PATH = u"./excel"
+PROTO_CACHE_PATH = u"./cache/proto"
+PYTHON_CACHE_PATH = u"./cache/python"
+CLASSNAME_CACHE_PATH = u"./cache/classname"
 
 
 class CTool:
@@ -48,13 +48,12 @@ class CTool:
                     break
             if has_s_flag == False:
                 continue
-            classname_file_name = CLASSNAME_CACHE_PATH + "/classname.txt"
-            with open(classname_file_name, 'a+') as data_file:  
-                classname_data = proto_name + base.one_space           
-                data_file.write(''.join(classname_data))
-
-            english_names = []                
-            server_types = []                                                                          
+                                
+            classname_data =  proto_name + ":"
+            first_classname_flag = True
+                            
+            english_names = []
+            server_types = []
             for j in range(0, col_num):     
                 server_type = table.cell_value(base.server_type_row, j)
                 if base.check_data_type(server_type):
@@ -62,7 +61,14 @@ class CTool:
                     if base.is_server(cs_flag) or base.is_client_and_server(cs_flag):                           
                         english_name = table.cell_value(base.english_row, j)
                         server_types.append(server_type)
-                        english_names.append(english_name)               
+                        english_names.append(english_name)
+                        is_key = table.cell_value(base.key_row, j)
+                        if is_key == "Key" or is_key == "MixKey":
+                            if first_classname_flag == True:
+                                first_classname_flag = False
+                                classname_data +=  is_key + "_" + server_type + "_" + english_name
+                            else:
+                                classname_data += "#" + is_key + "_" + server_type + "_" + english_name
                 else:
                     print "read", filename, server_type," col=", j, " server_type error"
             if header_flag == True:
@@ -71,6 +77,12 @@ class CTool:
             self.proto_generate(proto_name, english_names, server_types)
             self.proto_list_generate(proto_name)
             is_need_write = True 
+            if is_need_write == True:
+                classname_data += ";" + base.empty_line
+                classname_file_name = CLASSNAME_CACHE_PATH + "/classname.txt"
+                with open(classname_file_name, 'a+') as data_file:  
+                    data_file.write(''.join(classname_data))     
+
         print filename,sheet_names,"excel2proto ok..."
         return True,is_need_write
 
@@ -133,7 +145,7 @@ def Start():
                 cap_file_name = file_name.capitalize()
                 try:
                     tool = CTool()
-                    success = tool.read(file_full_path,cap_file_name)
+                    success = tool.read(file_full_path,cap_file_name)                    
                 except Exception, e:
                     print "tool read err:",e 
                     sys.exit(1)
