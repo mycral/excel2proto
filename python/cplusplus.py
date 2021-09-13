@@ -111,6 +111,27 @@ class CTool:
         code += base.empty_line
         self.mCodeData += code
 
+    def generate_get_by_key_name_declare(self, class_name,key_type,key_name):
+        lower_key_name = key_name.lower()    
+        class_name_cfg = class_name + "Cfg"        
+        code = base.one_tab + base.one_tab + "const " + class_name + "* Get" + class_name + "By" + key_name + "(" + self.type_to_cplusplus_type(key_type)  + base.one_space + lower_key_name + "); " + base.change_line
+        code += base.empty_line
+        self.mCodeData += code         
+
+    def generate_get_by_mix_key_names_declare(self,class_name,mixkey_types,mixkey_names):
+        class_name_cfg = class_name + "Cfg"        
+        code = base.one_tab + base.one_tab + "const " + class_name + "* Get" + class_name + "ByMixKey("
+        i = 0
+        for mix_key in mixkey_types:    
+            if i == 0:        
+                code += self.type_to_cplusplus_type(mixkey_types[i])  +  base.one_space + mixkey_names[i].lower()
+            else:
+                code += "," + self.type_to_cplusplus_type(mixkey_types[i])  +  base.one_space + mixkey_names[i].lower()
+            i = i + 1
+        code += "); " + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
+    
     def generate_define_start(self):
         code = base.one_tab + "private:" + base.change_line
         code += base.one_tab + base.one_tab + "const char*  path = nullptr;" + base.change_line
@@ -118,8 +139,8 @@ class CTool:
         self.mCodeData += code
 
     def generate_define_class(self, fileName):
-        lower_file_name = fileName.lower()
-        code = base.one_tab + base.one_tab + "" + fileName + "Cfg *" + lower_file_name + "_ptr = nullptr;" + base.change_line
+        lower_file_name = fileName.lower() 
+        code = base.one_tab + base.one_tab + "" + fileName + "Cfg *" + lower_file_name + "cfg_ptr = nullptr;" + base.change_line
         code += base.empty_line
         self.mCodeData += code
 
@@ -156,10 +177,10 @@ class CTool:
 
     def generate_cpp_destruct(self, fileName):
         lower_file_name = fileName.lower()
-        code = base.one_tab +  base.one_tab + "if(" + lower_file_name + "_ptr)" + base.change_line
+        code = base.one_tab +  base.one_tab + "if(" + lower_file_name + "cfg_ptr)" + base.change_line
         code += base.one_tab +  base.one_tab  + base.start_scope + base.change_line
-        code += base.one_tab +  base.one_tab + base.one_tab + "delete"+ base.one_space + lower_file_name + "_ptr;" + base.change_line
-        code += base.one_tab +  base.one_tab + base.one_tab + lower_file_name + "_ptr" + base.one_space + "=" + base.one_tab + "nullptr;" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "delete"+ base.one_space + lower_file_name + "cfg_ptr;" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + lower_file_name + "cfg_ptr" + base.one_space + "=" + base.one_tab + "nullptr;" + base.change_line
         code += base.one_tab +  base.one_tab + base.end_scope + base.change_line
         code += base.empty_line
         self.mCodeData += code
@@ -219,9 +240,9 @@ class CTool:
 
     def generate_load_all_cfg(self, fileName):
         lower_file_name = fileName.lower()
-        code = base.one_tab +  base.one_tab + lower_file_name + "_ptr = new " + fileName + "Cfg();" + base.change_line        
+        code = base.one_tab +  base.one_tab + lower_file_name + "cfg_ptr = new " + fileName + "Cfg();" + base.change_line        
         code += base.one_tab +  base.one_tab + "string " + lower_file_name + "_path = prefix_path + \"/" + fileName + ".pb\";" + base.change_line
-        code += base.one_tab +  base.one_tab + "if (!ConfigMgr::LoadExcelConfig(" + lower_file_name + "_path.c_str(), " + lower_file_name + "_ptr))" + base.change_line
+        code += base.one_tab +  base.one_tab + "if (!ConfigMgr::LoadExcelConfig(" + lower_file_name + "_path.c_str(), " + lower_file_name + "cfg_ptr))" + base.change_line
         code += base.one_tab +  base.one_tab + "{" + base.change_line
         code += base.one_tab +  base.one_tab + base.one_tab + "return CREATE_ERROR_STRING(\"load " + fileName + "  file error..\"); " + base.change_line
         code += base.one_tab +  base.one_tab + "}" + base.change_line        
@@ -239,20 +260,92 @@ class CTool:
         lower_file_name = fileName.lower()       
         code = base.one_tab +  "const " + fileName + "Cfg* ConfigMgr::Get" + fileName + "Cfg()" + base.change_line
         code += base.one_tab +  "{" + base.change_line
-        code += base.one_tab +  base.one_tab + "return " + lower_file_name + "_ptr;" + base.change_line
+        code += base.one_tab +  base.one_tab + "return " + lower_file_name + "cfg_ptr;" + base.change_line
         code += base.one_tab +  "}" + base.change_line
         code += base.empty_line
 
-        code += base.one_tab +  "const " + fileName + "*  ConfigMgr::Get" + fileName + "ByID(uint32_t id) {" + base.change_line
-        code += base.one_tab +  base.one_tab + "if (" + lower_file_name + "_ptr) {" + base.change_line
-        code += base.one_tab +  base.one_tab + base.one_tab + "auto iter = " + lower_file_name + "_ptr->datas().find(id);" + base.change_line
-        code += base.one_tab +  base.one_tab + base.one_tab + "if (iter != " + lower_file_name + "_ptr->datas().end()) {" + base.change_line
+        code += base.one_tab +  "const " + fileName + "*  ConfigMgr::Get" + fileName + "ByID(uint32_t id) " + base.change_line
+        code += base.one_tab +  "{" + base.change_line
+        code += base.one_tab +  base.one_tab + "if (" + lower_file_name + "cfg_ptr) {" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "auto iter = " + lower_file_name + "cfg_ptr->datas().find(id);" + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + "if (iter != " + lower_file_name + "cfg_ptr->datas().end()) {" + base.change_line
         code += base.one_tab +  base.one_tab + base.one_tab + base.one_tab + "return &(iter->second);" + base.change_line
         code += base.one_tab +  base.one_tab + base.one_tab + "}" + base.change_line
         code += base.one_tab +  base.one_tab + "}" + base.change_line
         code += base.one_tab +  base.one_tab + "return nullptr;" + base.change_line
         code += base.one_tab +  "}" + base.change_line
 
+        code += base.empty_line
+        self.mCodeData += code
+    
+    def type_to_cplusplus_type(self,in_type):
+        if in_type == "int16":
+            return "int16_t"
+        elif in_type == "uint16":
+            return "uint16_t"
+        elif in_type == "int32":
+            return "int32_t"
+        elif in_type ==  "uint32":
+            return "uint32_t"
+        elif in_type == "int64":
+            return "int64_t"
+        elif in_type == "uint64":
+            return "uint64_t"
+        else:
+            return in_type 
+
+    def generate_get_by_key_name(self, class_name,key_type,key_name):    
+        lower_key_name = key_name.lower()    
+        class_name_cfg = class_name + "Cfg"        
+        code = base.one_tab +  "const " + class_name + "* ConfigMgr::Get" + class_name + "By" + key_name + "(" + self.type_to_cplusplus_type(key_type)  + base.one_space + lower_key_name + ")" + base.change_line                 
+        code += base.one_tab + base.start_scope + base.change_line 
+        code += base.one_tab + base.one_tab + "if (" + class_name.lower() + "cfg_ptr)" + base.change_line
+        code += base.one_tab + base.one_tab + base.start_scope + base.change_line 
+        code += base.one_tab + base.one_tab + base.one_tab + "for (auto iter = " + class_name.lower() + "cfg_ptr->datas().begin(); iter != " + class_name.lower() + "cfg_ptr->datas().end(); ++iter)"  + base.change_line
+        code += base.one_tab +  base.one_tab + base.one_tab + base.start_scope + base.change_line                 
+        code += base.one_tab + base.one_tab + base.one_tab +  base.one_tab + "if (iter->second." + key_name.lower() + "()" + base.one_space + "==" + base.one_space + lower_key_name + ")" +base.one_space  + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab +  base.one_tab + "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab +  base.one_tab + base.one_tab + "return &(iter->second);" + base.change_line 
+        code +=  base.one_tab + base.one_tab + base.one_tab + base.one_tab +"}" + base.change_line
+        code +=  base.one_tab + base.one_tab + base.one_tab   + "}" + base.change_line        
+        code +=  base.one_tab + base.one_tab + "}" + base.change_line         
+        code += base.one_tab + base.one_tab + "return nullptr;" + base.change_line        
+        code +=  base.one_tab  + "}" + base.change_line   
+        code += base.empty_line
+        self.mCodeData += code
+
+    def generate_get_by_mix_key_names(self,class_name,mixkey_types,mixkey_names):
+        class_name_cfg = class_name + "Cfg"        
+        code = base.one_tab  + "const " + class_name + "* ConfigMgr::Get" + class_name + "ByMixKey("
+        i = 0
+        for mix_key in mixkey_types:    
+            if i == 0:        
+                code += self.type_to_cplusplus_type(mixkey_types[i])  +  base.one_space + mixkey_names[i].lower()
+            else:
+                code += "," + self.type_to_cplusplus_type(mixkey_types[i])  +  base.one_space + mixkey_names[i].lower()
+            i = i + 1
+        code += ") " + base.change_line        
+        code += base.one_tab + base.start_scope + base.change_line 
+        code += base.one_tab + base.one_tab + "if (" + class_name.lower() + "cfg_ptr)" + base.change_line
+        code += base.one_tab + base.one_tab + base.start_scope + base.change_line 
+        code += base.one_tab + base.one_tab + base.one_tab + "for (auto iter = " + class_name.lower() + "cfg_ptr->datas().begin(); iter != " + class_name.lower() + "cfg_ptr->datas().end(); ++iter)"  + base.change_line        
+        code += base.one_tab + base.one_tab + base.one_tab +  "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "if ((iter->second." 
+        i = 0
+        for mix_key in mixkey_types:    
+            if i == 0:        
+                code += mixkey_names[i].lower() + "()" + base.one_space + "==" + base.one_space + mixkey_names[i].lower() + ")"
+            else:
+                code += " && " + "(iter->second." + mixkey_names[i].lower() + "()" + base.one_space + "==" + base.one_space + mixkey_names[i].lower() + ")"
+            i = i + 1
+        code += ")" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + base.one_tab + "return &(iter->second);" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "}" + base.change_line           
+        code += base.one_tab + base.one_tab + base.one_tab  + "}" + base.change_line          
+        code += base.one_tab + base.one_tab + "}" + base.change_line
+        code += base.one_tab + base.one_tab +  "return nullptr;" + base.change_line
+        code += base.one_tab  + "}" + base.change_line
         code += base.empty_line
         self.mCodeData += code
     
@@ -265,11 +358,12 @@ def Start():
     if os.path.exists(CFG_MGR_PATH): shutil.rmtree(CFG_MGR_PATH)    
     if not os.path.exists(CFG_MGR_PATH): os.makedirs(CFG_MGR_PATH)
 
+    classname_content=""
     classname_file_name = CLASSNAME_CACHE_PATH + "/classname.txt"
     with open(classname_file_name, "r") as classname_file:
         classname_content = classname_file.read()
-        classnames = re.split(base.one_space,classname_content)
-
+    classname_content = base.get_handle_string(classname_content)
+    classnames = base.parse_classnames(classname_content)
     classnames.remove("")
 
     # configmgr.h generate
@@ -283,7 +377,32 @@ def Start():
 
     tool.generate_start_class()
     for classname in classnames:
+        #id 
         tool.generate_context_class(classname)
+    #get key minkey
+    classname_units = re.split(";",classname_content)
+    classname_units.remove("")
+    for classname_unit in classname_units:
+        classname_array = re.split(":",classname_unit)
+        classname = classname_array[0]
+        keys=[]
+        mixkey_types=[]
+        mixkey_names=[]
+        key_arrays = re.split("#",classname_array[1])
+        for key_array in key_arrays:
+            key_infos = re.split("_",key_array)
+            key_str = key_infos[0]
+            key_type = key_infos[1]
+            key_name = key_infos[2]
+            if key_name != "ID" and key_str == base.MainKey:            
+                #key                
+                tool.generate_get_by_key_name_declare(classname,key_type,key_name)                
+            elif key_str == base.MixKey:
+                #minkey
+                mixkey_types.append(key_type)
+                mixkey_names.append(key_name)
+        if len(mixkey_types) != 0 and len(mixkey_names) != 0:            
+            tool.generate_get_by_mix_key_names_declare(classname,mixkey_types,mixkey_names)            
 
     tool.generate_define_load_static()
     #tool.generate_define_reload_static()
@@ -326,6 +445,29 @@ def Start():
 
     for classname in classnames:    
         cpp_tool.generate_get_cfg(classname)   
+    
+    #get key minkey
+    for classname_unit in classname_units:
+        classname_array = re.split(":",classname_unit)
+        classname = classname_array[0]
+        keys=[]
+        mixkey_types=[]
+        mixkey_names=[]
+        key_arrays = re.split("#",classname_array[1])
+        for key_array in key_arrays:
+            key_infos = re.split("_",key_array)
+            key_str = key_infos[0]
+            key_type = key_infos[1]
+            key_name = key_infos[2]
+            if key_name != "ID" and key_str == base.MainKey:            
+                #key
+                cpp_tool.generate_get_by_key_name(classname,key_type,key_name)
+            elif key_str == base.MixKey:
+                #minkey
+                mixkey_types.append(key_type)
+                mixkey_names.append(key_name)
+        if len(mixkey_types) != 0 and len(mixkey_names) != 0:                        
+            cpp_tool.generate_get_by_mix_key_names(classname,mixkey_types,mixkey_names)
 
     #for classname in classnames:
     #    cpp_tool.generate_new_obj(classname)

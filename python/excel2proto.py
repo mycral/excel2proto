@@ -69,6 +69,19 @@ class CTool:
                                 classname_data +=  is_key + "_" + server_type + "_" + english_name
                             else:
                                 classname_data += "#" + is_key + "_" + server_type + "_" + english_name
+                        if is_key == "Key":
+                            key_check_array = []
+                            for k in range (base.data_start_row,row_num):
+                                key_val = table.cell_value(k, j)
+                                exit_key_val_flag = False 
+                                for temp_key_val in  key_check_array:
+                                    if temp_key_val == key_val:
+                                        print filename, server_type,"row=",k,"col=",j," key repeated"
+                                        exit_key_val_flag = True                                    
+                                if  exit_key_val_flag:                                    
+                                    sys.exit(1)
+                                else:
+                                    key_check_array.append(key_val)
                 else:
                     print "read", filename, server_type," col=", j, " server_type error"
             if header_flag == True:

@@ -10,11 +10,11 @@ import base
 import shutil 
 import re
 
-#CLASSNAME_CACHE_PATH = sys.argv[1]
-#CFG_MGR_PATH = sys.argv[2]
+CLASSNAME_CACHE_PATH = sys.argv[1]
+CFG_MGR_PATH = sys.argv[2]
 
-CLASSNAME_CACHE_PATH = u"./cache/classname"
-CFG_MGR_PATH = u"./cache/go_cfg_mgr"
+#CLASSNAME_CACHE_PATH = u"./cache/classname"
+#CFG_MGR_PATH = u"./cache/go_cfg_mgr"
 
 class CTool:
     def __init__(self):
@@ -314,7 +314,7 @@ def Start():
 
     #id
     for classname in classnames:                
-       tool.generate_get_by_id(classname)
+      tool.generate_get_by_id(classname)
 
     #get key minkey 
     classname_units = re.split(";",classname_content)
@@ -331,7 +331,7 @@ def Start():
             key_str = key_infos[0]
             key_type = key_infos[1]
             key_name = key_infos[2]
-            if key_name != "ID" and key_str == base.MainKey:
+            if key_name != "ID" and key_str == base.MainKey:            
                 #key
                 tool.generate_get_by_key_name(classname,key_type,key_name)
             elif key_str == base.MixKey:

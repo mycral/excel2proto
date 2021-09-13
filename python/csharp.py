@@ -125,6 +125,22 @@ class CTool:
         code += base.empty_line
         self.mCodeData += code
 
+    def type_to_csharp_type(self,in_type):
+        if in_type == "int16":
+            return "Int16"
+        elif in_type == "uint16":
+            return "UInt16"
+        elif in_type == "int32":
+            return "Int32"
+        elif in_type ==  "uint32":
+            return "UInt32"
+        elif in_type == "int64":
+            return "Int64"
+        elif in_type == "uint64":
+            return "UInt64"
+        else:
+            return in_type 
+
     def generate_get_cfg_by_id(self, fileName):        
         code = base.one_tab + base.one_tab + "public " + fileName + "  Get" + fileName + "ByID(UInt32 id)" + base.change_line
         code += base.one_tab + base.one_tab + "{" + base.change_line
@@ -138,15 +154,65 @@ class CTool:
         code += base.empty_line
         self.mCodeData += code            
 
+    def generate_get_by_key_name(self, class_name,key_type,key_name):    
+        lower_key_name = key_name.lower()    
+        class_name_cfg = class_name + "Cfg"        
+        code = base.one_tab + base.one_tab + "public" + base.one_space + class_name + " Get" + class_name + "By" + key_name + "(" + self.type_to_csharp_type(key_type)  + base.one_space + lower_key_name + ") " + base.change_line
+        code += base.one_tab + base.one_tab + "{" + base.change_line                
+        code += base.one_tab + base.one_tab + base.one_tab +  "foreach (" + class_name + " val in " + class_name_cfg +".Datas.Values)" +base.empty_line
+        code += base.one_tab + base.one_tab + base.one_tab +  "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab +  base.one_tab + "if (val." + key_name + base.one_space + "==" + base.one_space + lower_key_name + ")" +base.one_space  + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab +  base.one_tab + "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab +  base.one_tab + base.one_tab + "return val;" + base.change_line 
+        code +=  base.one_tab + base.one_tab + base.one_tab + base.one_tab +"}" + base.change_line
+        code +=  base.one_tab + base.one_tab + base.one_tab   + "}" + base.change_line        
+        code += base.one_tab + base.one_tab + base.one_tab   +  "return null;" + base.change_line        
+        code +=  base.one_tab + base.one_tab  + "}" + base.change_line   
+        code += base.empty_line
+        self.mCodeData += code
+    
+    def generate_get_by_mix_key_names(self,class_name,mixkey_types,mixkey_names):
+        class_name_cfg = class_name + "Cfg"        
+        code = base.one_tab + base.one_tab + "public" + base.one_space + class_name + " Get" + class_name + "ByMixKey("
+        i = 0
+        for mix_key in mixkey_types:    
+            if i == 0:        
+                code += self.type_to_csharp_type(mixkey_types[i])  +  base.one_space + mixkey_names[i].lower()
+            else:
+                code += "," + self.type_to_csharp_type(mixkey_types[i])  +  base.one_space + mixkey_names[i].lower()
+            i = i + 1
+        code += ") " + base.change_line
+        code += base.one_tab + base.one_tab + "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab +  "foreach (" + class_name + " val in " + class_name_cfg +".Datas.Values)" + base.empty_line
+        code += base.one_tab + base.one_tab + base.one_tab +  "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "if ((val." 
+        i = 0
+        for mix_key in mixkey_types:    
+            if i == 0:        
+                code += mixkey_names[i] + base.one_space + "==" + base.one_space + mixkey_names[i].lower() + ")"
+            else:
+                code += " && " + "(val." + mixkey_names[i] + base.one_space + "==" + base.one_space + mixkey_names[i].lower() + ")"
+            i = i + 1
+        code += ")" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "{" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + base.one_tab + "return val;" + base.change_line
+        code += base.one_tab + base.one_tab + base.one_tab + base.one_tab + "}" + base.change_line           
+        code += base.one_tab + base.one_tab + base.one_tab  + "}" + base.change_line          
+        code += base.one_tab + base.one_tab + base.one_tab + "return null;" + base.change_line
+        code += base.one_tab + base.one_tab + "}" + base.change_line
+        code += base.empty_line
+        self.mCodeData += code
+
 def Start():
     if os.path.exists(CFG_MGR_PATH): shutil.rmtree(CFG_MGR_PATH)    
     if not os.path.exists(CFG_MGR_PATH): os.makedirs(CFG_MGR_PATH)
 
+    classname_content=""
     classname_file_name = CLASSNAME_CACHE_PATH + "/classname.txt"
     with open(classname_file_name, "r") as classname_file:
         classname_content = classname_file.read()
-        classnames = re.split(base.one_space,classname_content)
-
+    classname_content = base.get_handle_string(classname_content)
+    classnames = base.parse_classnames(classname_content)
     classnames.remove("")
 
     tool = CTool()
@@ -159,10 +225,35 @@ def Start():
     tool.generate_load_all_cfg_end()
 
     tool.generate_load_cfg()
+
+    #id
     for classname in classnames:
         tool.generate_get_cfg(classname)
         tool.generate_get_cfg_by_id(classname)
-    
+    #get key minkey
+    classname_units = re.split(";",classname_content)
+    classname_units.remove("")
+    for classname_unit in classname_units:
+        classname_array = re.split(":",classname_unit)
+        classname = classname_array[0]
+        keys=[]
+        mixkey_types=[]
+        mixkey_names=[]
+        key_arrays = re.split("#",classname_array[1])
+        for key_array in key_arrays:
+            key_infos = re.split("_",key_array)
+            key_str = key_infos[0]
+            key_type = key_infos[1]
+            key_name = key_infos[2]
+            if key_name != "ID" and key_str == base.MainKey:            
+                #key
+                tool.generate_get_by_key_name(classname,key_type,key_name)
+            elif key_str == base.MixKey:
+                #minkey
+                mixkey_types.append(key_type)
+                mixkey_names.append(key_name)
+        if len(mixkey_types) != 0 and len(mixkey_names) != 0:
+            tool.generate_get_by_mix_key_names(classname,mixkey_types,mixkey_names)
 
     for classname in classnames:        
         tool.generate_define_class(classname)
