@@ -1,7 +1,13 @@
 # python运行环境:
-* python: 2.7
-* protobuf: 3.17.3
-* pip : https://bootstrap.pypa.io/pip/2.7/get-pip.py
+## window:
+* python: 2.7 ==>  software/python-2.7.18.amd64.msi
+* pip install xlrd==1.2.0
+* pip install protobuf==3.13.0
+* pip list
+## linux: (Ubuntu)
+* sudo apt-get install python2.7
+* sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7  150
+* pip : python  software/get-pip.py
 * pip install xlrd==1.2.0
 * pip install protobuf==3.13.0
 * pip list
